@@ -1,2 +1,2 @@
 # Orientation-of-DDMR
-Orientation of Differential-Drive Mobile Robot (DDMR)
+Orientation of the Differential-Drive Mobile Robot (DDMR)
