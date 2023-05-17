@@ -20,7 +20,7 @@
 
 ## NOTICE
 
-- The code uses a magnetometer sensor which in integrated into the code... If by chance you have a different sensor, the sensor code may be exchanged with your code... This is the last project of the year 2023 except I will review the repositories for completeness abd functionality. The DDMR-Orientation was a planned project since summer of 2022, it is an accumulation of all the work presented in the repositories at MageMCU. 
+- The code uses a magnetometer sensor which is integrated into the code... If by chance you have a different sensor, the sensor code may be exchanged with your code... This is the last project of the year 2023 except I will review the repositories for completeness abd functionality. The DDMR-Orientation was a planned project since summer of 2022, it is an accumulation of all the work presented in the repositories at MageMCU. 
 
 ## Disclaimer and Terms
 
