@@ -9,7 +9,7 @@
 - **Controller.h**   
     - file located in PID repository (ok not to move for now)
 - **LSM303.h** 
-- **ManagerFSM.h.h**    
+- **ManagerFSM.h**    
 - **Statistics.h** 
     - file located in Numerics repositiry (ok not to move for now)
 - **Timer.h**  
@@ -30,7 +30,7 @@
         - empty
 - XCPP folder
     - **BusI2C.cpp** 
-    - **LSM303.cpp.cpp**
+    - **LSM303.cpp**
 
 ## ***root folder***
 
