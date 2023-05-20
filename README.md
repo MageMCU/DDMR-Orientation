@@ -6,7 +6,7 @@
 
 - Compass Code Take 3 <a href="https://www.youtube.com/watch?v=AXNU_OpvKLk" target="_blank">Youtube</a>
 
-- Most of the new repositories at MageMCU were developed to further the study the DDMR orientation. It is my hope to finish the remaining articles during the rest of the year and in the year 2024, publish a new simulation version - Compass Code at Youtube.
+- Most of the new repositories at MageMCU were developed to further study the DDMR orientation. It is my hope to finish the remaining articles during the rest of the year and in the year 2024, publish a new simulation version - Compass Code at Youtube.
 
 ## Testing Platform
 
