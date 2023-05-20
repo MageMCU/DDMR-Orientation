@@ -95,7 +95,7 @@ void setup()
 
 void loop()
 {
-    if (gTimerFSM.isTimer(1000))
+    if (gTimerFSM.isTimer(100))
     {   
         // (1) When using debug version, set
         // timer to 1000 ms...

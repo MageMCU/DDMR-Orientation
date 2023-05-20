@@ -1,6 +1,6 @@
 //
 // Carpenter Software
-// File: Class Bitwise.h
+// File: Class Statistics.h
 // Folder: Algebra
 //
 // Purpose: Github Depository (MageMCU)

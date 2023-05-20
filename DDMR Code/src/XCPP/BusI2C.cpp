@@ -9,7 +9,6 @@ using namespace dsg;
     BusI2C::BusI2C()
     {
         m_errorI2C = 0;
-        Serial.println("BusI2C Const...");
     }
 
     void BusI2C::Begin(uint8_t address)

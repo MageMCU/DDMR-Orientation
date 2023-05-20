@@ -4,7 +4,6 @@
 //
 // Purpose: Public Github Account - MageMCU
 // Repository: Communication
-// Date Created: 20230219
 // Folder: Digital Signals
 //
 // Author: Jesse Carpenter (carpentersoftware.com)
