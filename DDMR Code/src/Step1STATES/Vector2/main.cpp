@@ -40,6 +40,7 @@ using namespace nmr;
 //         by 30 degrees.
 //     (2) Convert (SP) angle to vector...
 //     (3) Auto-Transition (non-conditional) to OrientationState
+// *N* TurnDirectionState --------------------------------------- (N for new )FIXME
 // *C* OrientationState
 //     (1) Magnetometer Reading angle as the
 //         measured value (MV)... Note the
