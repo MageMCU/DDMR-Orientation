@@ -22,7 +22,7 @@
 
 ## In Development
 
-- 20230520
+- 20230520 2nd-update...
 
 ## NOTICE
 

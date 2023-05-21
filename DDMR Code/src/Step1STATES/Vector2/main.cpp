@@ -1,14 +1,11 @@
 //
 // Carpenter Software
-// File: src: MAIN: main.cpp
+// Folders: src: Step1STATES: DotProduct:
+// File: main.cpp
 //
 // Purpose: Public Github Account - MageMCU
-// Repository: ManagerFSM
-// Date Created: 20230503
-// Folder: OOP-ManagerFSM
-//
-// Code was adapted from Programming Game AI by Example (2005)
-// by Mat Buckland...
+// Repository: DDMR-Orientation
+// Folder: DDMR Code
 //
 // Author: Jesse Carpenter (carpentersoftware.com)
 // Email:carpenterhesse@gmail.com
@@ -24,7 +21,7 @@
 
 #include <Arduino.h>
 
-#include "ManagerFSM.h"
+#include "ControlManagerV2.h"
 #include "Timer.h"
 
 using namespace fsm;
@@ -35,7 +32,7 @@ using namespace nmr;
 // STATES ---------------------------------------- STATES
 // *A* IdleState - At startup, the State Machine intially
 //         uses the Enter() method...
-//     (1) Auto-Transition (non-conditional) to SetPointState 
+//     (1) Auto-Transition (non-conditional) to SetPointState
 // *B* SetPointState
 //     (1) Choose a random angle (-180 to 180)
 //         as the set-point (SP) and it ought
@@ -64,19 +61,21 @@ using namespace nmr;
 //         the shortest distance around a unit-circle
 //         either clockwise (CW) or counter-clockwise
 //         (CCW).
-//     (6) Flag-Transition (conditional) to IdleState *A* 
+//     (6) Flag-Transition (conditional) to IdleState *A*
 //         The flag is used until controll-error approaches
 //         zero (or very close to zero)... Also this state
 //         may be used as a safe state to stop or to continue
 //         debugging other states... From here, will transition
 //         back into IdleState-Enter()... See *A*...
+//   NOTE: As of 20230520, all debugging for *C* is complete.....
+//         Will review code... Motors are next...
 // MOTORS ---------------------------------------- MOTORS
 // ------------------------------------------------------ PENDING
 //
 
 // GLOBAL ---------------------------------------- FIXME
-// fsm::ManagerFSM gManager;
-ManagerFSM<float> gFSM;
+// fsm::ControlManagerV2 gManager;
+ControlManagerV2<float> gCMV2;
 Timer gTimerFSM;
 
 void setup()
@@ -86,28 +85,27 @@ void setup()
     while (!Serial)
     {
         /* code */
-    } 
-    // ManagerFSM
-    gFSM = ManagerFSM<float>();
-    gFSM.Begin();
-
+    }
+    // ControlManagerV2
+    gCMV2 = ControlManagerV2<float>();
+    gCMV2.Begin();
 }
 
 void loop()
 {
     if (gTimerFSM.isTimer(100))
-    {   
+    {
         // (1) When using debug version, set
         // timer to 1000 ms...
-        // (2) When using release version, the 
+        // (2) When using release version, the
         // statistics at 5-data points needs
         // the timer set to 200 ms for a 1-sec giving
         // 5-cycles per sec intervals for the mean (average)
         // and standard deviation... BEWARE see (3)
         // (I tried 100 ms timer without any issues...)
-        // (3) The time sample (TS) for the PID has to be 
-        // a constant so do not allow algorithms 
-        // to overtake the timer... Place 
+        // (3) The time sample (TS) for the PID has to be
+        // a constant so do not allow algorithms
+        // to overtake the timer... Place
         // Timer.DeltaTimeSeconds() at the end of loop
         // block within timer's loop... See below. Should
         // match the same time intervals for Timer.IsTimer()...
@@ -116,9 +114,9 @@ void loop()
         // the I2C bus will hangup basically saying
         // I give up....
 
-        gFSM.Update();
+        gCMV2.Update();
 
-        // DeltaTime (how much time does gFSM.Update(); uses?)
+        // DeltaTime (how much time does gCMV2.Update(); uses?)
         // Serial.print("dT: ");
         // Serial.println(gTimerFSM.DeltaTimeSeconds());
     }

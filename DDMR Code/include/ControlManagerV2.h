@@ -1,9 +1,14 @@
 //
 // Carpenter Software
-// File: Class ManagerFSM.h
+// File: Class ControlManagerV2.h
+// Usage: (1) Vector2 (direction vectors)
+//        (2) Perpendicular-Dot Product
+//            for turning-direction
+//        (3) Dot Product (PID error control)
+//            for PID error control...
 //
 // Purpose: Public Github Account - MageMCU
-// Repository: DDMR-Orientation 
+// Repository: DDMR-Orientation
 // Folder: DDMR Code
 //
 // Author: Jesse Carpenter (carpentersoftware.com)
@@ -18,8 +23,8 @@
 // MIT LICENSE
 //
 
-#ifndef Manager_FSM_h
-#define Manager_FSM_h
+#ifndef Control_Manager_V2_h
+#define Control_Manager_V2_h
 
 #include <Arduino.h>
 #include <Wire.h>
@@ -61,13 +66,16 @@ namespace fsm
         EnterIdleState = 19,
         EnterSetpointState = 18,
         EnterTurnDirectionState = 17,
-        EnterOrientationState = 16
+        EnterOrientationState = 16,
 
         // Exit States >= 20 NONE
+
+        // NULL STATE
+        nullState = -1
     };
 
     template <typename real>
-    class ManagerFSM
+    class ControlManagerV2
     {
     private:
         // Objects
@@ -79,6 +87,7 @@ namespace fsm
 
         // Private Properties
         States m_currentState;
+        States m_lastState;
         real m_angleSP;
         real m_angleMV;
 
@@ -134,6 +143,7 @@ namespace fsm
         void m_updateCompass();
         void m_updatePID();
         bool m_turnChanged();
+        bool m_stateChanged();
         real m_statistics(float value);
         void m_updateFSM();
 
@@ -143,7 +153,7 @@ namespace fsm
 
     public:
         // Constructor - inline
-        ManagerFSM()
+        ControlManagerV2()
         {
             m_angleSP = (real)0;
             m_angleMV = (real)0;
@@ -157,6 +167,7 @@ namespace fsm
 
             // Current State ID
             m_currentState = States::EnterIdleState;
+            m_lastState = States::nullState;
 
             // PID Controller
             real Kp = (real)0.95;
@@ -183,11 +194,11 @@ namespace fsm
             m_debugTimer = Timer();
         }
 
-        ~ManagerFSM() = default;
+        ~ControlManagerV2() = default;
 
-        // ManagerFSM setup()
+        // ControlManagerV2 setup()
         void Begin();
-        // ManagerFSM loop() inline
+        // ControlManagerV2 loop() inline
         void Update()
         {
             // Heading
@@ -196,8 +207,11 @@ namespace fsm
             m_updateFSM();
 
             // loop() timer is fast
-            if (m_debugTimer.isTimer(1000))
+            if (m_stateChanged() || m_debugTimer.isTimer(1000))
+            {
                 m_debugVitals();
+                m_lastState = m_currentState;
+            }
         }
 
         // Getters
@@ -206,10 +220,8 @@ namespace fsm
     };
 
     template <typename real>
-    void ManagerFSM<real>::Begin()
+    void ControlManagerV2<real>::Begin()
     {
-        Serial.println("Begin");
-
         // Wire startup
         m_busI2C.Begin(MASTER_ADDR_0x14, 3000, true);
 
@@ -227,13 +239,13 @@ namespace fsm
     // PUBLIC GETTERS
 
     template <typename real>
-    float ManagerFSM<real>::GetAngleSP()
+    float ControlManagerV2<real>::GetAngleSP()
     {
         return m_angleSP;
     }
 
     template <typename real>
-    float ManagerFSM<real>::GetAngleMV()
+    float ControlManagerV2<real>::GetAngleMV()
     {
         return m_angleMV;
     }
@@ -241,31 +253,31 @@ namespace fsm
     // PRIVATE SETTERS
 
     template <typename real>
-    void ManagerFSM<real>::m_setAngleSP(float angle)
+    void ControlManagerV2<real>::m_setAngleSP(float angle)
     {
         m_angleSP = angle;
     }
 
     template <typename real>
-    void ManagerFSM<real>::m_setAngleMV(float angle)
+    void ControlManagerV2<real>::m_setAngleMV(float angle)
     {
         m_angleMV = angle;
     }
 
     template <typename real>
-    void ManagerFSM<real>::m_processingOrientation()
+    void ControlManagerV2<real>::m_processingOrientation()
     {
         m_IsProcessingOrientation = true;
     }
 
     template <typename real>
-    void ManagerFSM<real>::m_releaseOrientation()
+    void ControlManagerV2<real>::m_releaseOrientation()
     {
         m_IsProcessingOrientation = false;
     }
 
     template <typename real>
-    bool ManagerFSM<real>::m_isProcessingOrientation()
+    bool ControlManagerV2<real>::m_isProcessingOrientation()
     {
         return m_IsProcessingOrientation;
     }
@@ -273,7 +285,7 @@ namespace fsm
     // PRIVATE METHODS
 
     template <typename real>
-    void ManagerFSM<real>::m_randomAngle()
+    void ControlManagerV2<real>::m_randomAngle()
     {
         real angle;
         real last = GetAngleSP();
@@ -298,14 +310,14 @@ namespace fsm
     }
 
     template <typename real>
-    void ManagerFSM<real>::m_angleToVectorSP()
+    void ControlManagerV2<real>::m_angleToVectorSP()
     {
         float rad = GetAngleSP() * DEG_TO_RAD;
         m_vSP = m_directionVector(rad);
     }
 
     template <typename real>
-    void ManagerFSM<real>::m_angleToVectorMV()
+    void ControlManagerV2<real>::m_angleToVectorMV()
     {
         float rad = GetAngleMV() * (float)DEG_TO_RAD;
         m_vMV = m_directionVector(rad);
@@ -314,7 +326,7 @@ namespace fsm
     // PRIVATE METHODS
 
     template <typename real>
-    Vector2<real> ManagerFSM<real>::m_directionVector(real radian)
+    Vector2<real> ControlManagerV2<real>::m_directionVector(real radian)
     {
         // MiscMath to Vector2
         float a = cos(radian);
@@ -324,7 +336,7 @@ namespace fsm
     }
 
     template <typename real>
-    void ManagerFSM<real>::m_updateCompass()
+    void ControlManagerV2<real>::m_updateCompass()
     {
         // Compass Update LSM303
         m_compass.read();
@@ -357,7 +369,7 @@ namespace fsm
     }
 
     template <typename real>
-    void ManagerFSM<real>::m_updatePID()
+    void ControlManagerV2<real>::m_updatePID()
     {
         // Determine Turning Direction
         m_perpDot = m_vMV.PerpDot(m_vSP);
@@ -365,7 +377,7 @@ namespace fsm
     }
 
     template <typename real>
-    bool ManagerFSM<real>::m_turnChanged()
+    bool ControlManagerV2<real>::m_turnChanged()
     {
         bool turnChanged = false;
         if (m_directionCCW)
@@ -380,10 +392,18 @@ namespace fsm
     }
 
     template <typename real>
-    real ManagerFSM<real>::m_statistics(float value)
+    bool ControlManagerV2<real>::m_stateChanged()
+    {
+        if ((int)m_currentState != (int)m_lastState)
+            return true;
+        return false;
+    }
+
+    template <typename real>
+    real ControlManagerV2<real>::m_statistics(float value)
     {
         // Statistics (5-point data queue)
-        // See ManagerFSM CLASS
+        // See ControlManagerV2 CLASS
         if (m_index >= TUPLES_SIZE)
             m_index = 0;
         m_stats.Queue(value, m_index);
@@ -396,14 +416,14 @@ namespace fsm
     // STATES
 
     template <typename real>
-    bool ManagerFSM<real>::m_enterIdleState()
+    bool ControlManagerV2<real>::m_enterIdleState()
     {
         // An Auto-Transitional Flag
         return true;
     }
 
     template <typename real>
-    bool ManagerFSM<real>::m_idleState()
+    bool ControlManagerV2<real>::m_idleState()
     {
         // Nothing to do here...
 
@@ -415,14 +435,14 @@ namespace fsm
     }
 
     template <typename real>
-    bool ManagerFSM<real>::m_enterSetpointState()
+    bool ControlManagerV2<real>::m_enterSetpointState()
     {
         // An Auto-Transitional Flag
         return true;
     }
 
     template <typename real>
-    bool ManagerFSM<real>::m_setpointState()
+    bool ControlManagerV2<real>::m_setpointState()
     {
         // Choose a random angle (-180 tp 180) as the set-point (SP)
         // and greater than the previous angle by 30 degrees.
@@ -436,14 +456,14 @@ namespace fsm
     }
 
     template <typename real>
-    bool ManagerFSM<real>::m_enterTurnDirectionState()
+    bool ControlManagerV2<real>::m_enterTurnDirectionState()
     {
         // Ready Auto-Transitional Flag
         return true;
     }
 
     template <typename real>
-    bool ManagerFSM<real>::m_turnDirectionState()
+    bool ControlManagerV2<real>::m_turnDirectionState()
     {
         if (m_perpDot < 0)
             m_directionCCW = true; // Left-turn
@@ -455,14 +475,14 @@ namespace fsm
     }
 
     template <typename real>
-    bool ManagerFSM<real>::m_enterOrientationState()
+    bool ControlManagerV2<real>::m_enterOrientationState()
     {
         m_processingOrientation();
         return true;
     }
 
     template <typename real>
-    bool ManagerFSM<real>::m_orientationState()
+    bool ControlManagerV2<real>::m_orientationState()
     {
         bool flag = false;
 
@@ -477,14 +497,17 @@ namespace fsm
         if (m_isProcessingOrientation())
         {
             // PID Setpoint
-            // Initially set within the constructor (zero)
+            // Initially setpoint was assigned within the 
+            // constructor (zero)...
             // PID Process Point
-            real processPoint = ((real)1.0 - m_dot) * (real)189;
+            real processPoint = (m_dot - (real)1.0) * (real)189;
             // Kp = 0.95, Ki = 0, Kd = 0 (see constructor)
-            // The '189' is an Emperical Control Factor used to 
+            // The '189' is an Emperical Control Factor used to
             // match the magnitude to the degrees 0 to 360. This
             // may have to change based on the Kp factor.
             // The dot product is linear....
+            // Property of (1 - dot) or (dot - 1) gives a desirable 
+            // value (zero) Property is in study...
             m_pid.UpdatePID(processPoint);
             // PID Control Function
             m_uf = m_pid.Control();
@@ -493,6 +516,9 @@ namespace fsm
         // Priority
         // MOTORS - '10' arbitrary value which
         // approximately 10 degrees....
+        // (1) Use your hands to simulate motor movement... FIXME
+        // (2) Use single motor project (dsg MCU project)
+        // (3) Use robot... (dsg MCU project)
         if (abs(m_uf) > (real)10)
         {
             // Using Joystick Algorithm
@@ -507,18 +533,27 @@ namespace fsm
             // Forward (y)
             // where y will change x differentially
             // from 0 to 1... Control???
-        }
 
-        // Time Constraint -
-        if (flag)
-            m_currentState = States::EnterIdleState;
+            // Experiemntal - Orientation Complete
+            // Question: What actual m_uf value equals 1-degree.
+            //           0.25 is about 3-degrees. Study.... FIXME
+            //           How to prevent m_uf skipping test????
+            //           AT 10-cycles per second (100ms), no skipping yet...
+            //           Try a more riguous test. FIXME
+            //           Is there a better test method?
+            if (abs(m_uf) < (real)0.25)
+            {
+                m_currentState = States::EnterIdleState;
+                return true;
+            }
+        }
 
         // Flagged Transition
         return flag;
     }
 
     template <typename real>
-    void ManagerFSM<real>::m_updateFSM()
+    void ControlManagerV2<real>::m_updateFSM()
     {
         // Finite State Machine
         switch (m_currentState)
@@ -593,7 +628,7 @@ namespace fsm
     }
 
     template <typename real>
-    void ManagerFSM<real>::m_debugVitals()
+    void ControlManagerV2<real>::m_debugVitals()
     {
         // Current State
         Serial.println(m_printState());
@@ -621,8 +656,8 @@ namespace fsm
         Serial.println(")");
 
         // MOTORS
-        // Joystick Algorithm
-        if (abs(m_uf) > (real) 10)
+        // Joystick Algorithm (pending) --------------- FIXME
+        if (abs(m_uf) > (real)10)
             Serial.print("T: "); // Turn Only (x)
         else
             Serial.print("TF: "); // Turn and Forward (x, y)
@@ -630,11 +665,12 @@ namespace fsm
         // PID - Looking for the shortest
         // circumference (distance) while
         // using a calibrated compass approaching
-        // the Setpoint (desired) value.... 
-        if (m_perpDot > 0)
-            Serial.print(" Right perpDot: ");
+        // the Setpoint (desired) value...
+        // The m_perpDot operation is how...
+        if (m_directionCCW)
+            Serial.print(" Left CCW: ");
         else
-            Serial.print(" Left perpDot:");
+            Serial.print(" Right CW:");
 
         // Once the Left and Right are established,
         // Make a note which perpDot sign (-/+) is
@@ -652,7 +688,7 @@ namespace fsm
     }
 
     template <typename real>
-    String ManagerFSM<real>::m_printState()
+    String ControlManagerV2<real>::m_printState()
     {
         String str = "";
 
@@ -689,6 +725,10 @@ namespace fsm
 
         case States::OrientationState:
             str = "Orientation State";
+            break;
+
+        default:
+            // Used for nullState
             break;
         }
         return str;

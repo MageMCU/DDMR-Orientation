@@ -1,7 +1,7 @@
 //
 // Carpenter Software
-// Folder: src: TESTS: 
-// File: common.h
+// File: Class ControlManagerQ.h
+// Usage: Quaternions...
 //
 // Purpose: Public Github Account - MageMCU
 // Repository: DDMR-Orientation
@@ -19,7 +19,11 @@
 // MIT LICENSE
 //
 
-#ifndef TESTS_Common_h
-#define TESTS_Common_h
+#ifndef Control_Manager_Q_h
+#define Control_Manager_Q_h
+
+#include <Arduino.h>
+#include <Wire.h>
+
 
 #endif
