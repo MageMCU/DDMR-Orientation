@@ -8,12 +8,12 @@
 - **BusI2C.h** 
 - **Controller.h**   
     - file located in PID repository (ok not to move for now)
-- **LSM303.h** 
 - **ControlManagerQ.h**   
     - new pending...
 - **ControlManagerV2.h**
     - name change from ManagerFSM.h
-- **Statistics.h** 
+- **LSM303.h** 
+- **Statistics.h** (This header class will be removed.... pending)
     - file located in Numerics repositiry (ok not to move for now)
 - **Timer.h**  
     - file located in Numerocs repository (ok not to move for now)
@@ -31,7 +31,7 @@
             - **Step-1 States**: development completed...
                 - (1) Vector2 used for directional unit vectors: one for the setpoint and the other for the measured value. The setpoint vector originated from a random angle and the measured value vector originated from the compass heading (LSM303).
                 - (2) Perpendicular-Dot Product on the unit vectors, the vector setpoint and vector measured value) were used for turning-direction (CW or CCW). The sign of the product gave the shortest arc length (or distance), thus giving a turn direction. The product may not be familiar to most CG gurus, so I will post a brief article here...
-                - (3) Dot Product on the unit vectors (vector Setpoint and vector Measured Value) used as the PID error function (ef).
+                - (3) **Angle Dot Product** on the unit vectors (vector Setpoint and vector Measured Value) used as the PID control function (uf).
 - Step2MOTORS folder
     - main.cpp
         - **pending...**
@@ -49,5 +49,4 @@
 
 ## Notes
 
-- A few header files were split into their implementation files with the extension (.cpp)... This may change...
 

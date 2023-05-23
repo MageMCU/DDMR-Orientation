@@ -22,7 +22,7 @@
 
 ## In Development
 
-- 20230520 2nd-update...
+- 20230523 major-update... Bug fixes, overall update on ControlManagerV2.h...
 
 ## NOTICE
 
