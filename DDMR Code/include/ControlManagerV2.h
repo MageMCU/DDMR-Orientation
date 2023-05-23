@@ -4,8 +4,7 @@
 // Usage: (1) Vector2 (direction vectors)
 //        (2) Perpendicular-Dot Product
 //            for turning-direction
-//        (3) Dot Product (PID error control)
-//            for PID error control...
+//        (3) Angle Dot Product used for PID control function (uf)
 //
 // Purpose: Public Github Account - MageMCU
 // Repository: DDMR-Orientation
