@@ -22,10 +22,14 @@
 #include <Arduino.h>
 
 #include "ControlManagerV2.h"
+#include "BusI2C.h"
+#include "Common.h"
+#include "Compass.h"
 #include "Timer.h"
 
-using namespace fsm;
-using namespace nmr;
+using namespace dsg; // digital signals
+using namespace csm; // control state machine
+using namespace nmr; // numerics
 
 // Manager inaccessible here -------------- Using Varient
 // Debugging must occur inside manager...................
@@ -73,9 +77,10 @@ using namespace nmr;
 // ------------------------------------------------------ PENDING
 //
 
-// GLOBAL ---------------------------------------- FIXME
-// fsm::ControlManagerV2 gManager;
+// GLOBALS
 ControlManagerV2<float> gCMV2;
+BusI2C gBusI2C;
+Compass<float> gCompass;
 Timer gTimerFSM;
 
 void setup()
@@ -86,9 +91,19 @@ void setup()
     {
         /* code */
     }
+    
     // ControlManagerV2
     gCMV2 = ControlManagerV2<float>();
-    gCMV2.Begin();
+    
+    // Bus
+    gBusI2C = BusI2C();
+    gBusI2C.Begin(MASTER_ADDR_0x14, 3000, true);
+    delay(6);
+
+    // Compass
+    gCompass = Compass<float>();
+    gCompass.Begin();
+    delay(6);
 }
 
 void loop()
@@ -114,7 +129,7 @@ void loop()
         // the I2C bus will hangup basically saying
         // I give up....
 
-        gCMV2.Update();
+        gCMV2.Update(gCompass.Update(), true);
 
         // DeltaTime (how much time does gCMV2.Update(); uses?)
         // Serial.print("dT: ");

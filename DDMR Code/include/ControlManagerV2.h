@@ -4,7 +4,10 @@
 // Usage: (1) Vector2 (direction vectors)
 //        (2) Perpendicular-Dot Product
 //            for turning-direction
-//        (3) Angle Dot Product used for PID control function (uf)
+//        (3) Angle Dot Product used for PID 
+//            control function (uf) - here
+//            degrees are used but may be
+//            changed to radian-measure...
 //
 // Purpose: Public Github Account - MageMCU
 // Repository: DDMR-Orientation
@@ -26,31 +29,14 @@
 #define Control_Manager_V2_h
 
 #include <Arduino.h>
-#include <Wire.h>
 
-#include "BusI2C.h"
-#include "LSM303.h"
 #include "Vector2.h"
 #include "Controller.h"
-#include "Statistics.h"
 
-using namespace dsg;
 using namespace nmr;
 using namespace pid;
 
-// MASTER UNO BOARD
-#define MASTER_ADDR_0x14 0x14
-
-// SLAVE Atmega328P Breadboard
-// Used for motors....
-// #define SLAVE_ADDR_0x16 0x16
-
-// TUPLES_SIZE
-// Sould be less than looptimer cycles
-// which is 10 cycles per secend (100ms)
-#define TUPLES_SIZE 5
-
-namespace fsm
+namespace csm // control state machine
 {
     // Priority (inside states use if-else)
     enum States
@@ -60,17 +46,9 @@ namespace fsm
         SetpointState = 2,      // OK
         TurnDirectionState = 3, // OK
         OrientationState = 4,   // OK
-                                // New States
-        MotorsTurnState = 5,    // OK
-        MotorsForwardState = 6, // OK
 
         // Enter States >= 10
-        EnterSetpointState = 12,      // OK
-        EnterTurnDirectionState = 13, // pending removal
-        EnterOrientationState = 14,   // pending removal
-                                      // New States
-        EnterMotorsTurnState = 15,    // pending removal
-        EnterMotorsForwardState = 16, // pending removal
+        EnterSetpointState = 12, // OK
 
         // Exit States >= 20 NONE
 
@@ -83,14 +61,11 @@ namespace fsm
     {
     private:
         // Objects
-        BusI2C m_busI2C;
-        LSM303 m_compass;
         Controller<real> m_pid;
-        Statistics<real> m_stats;
 
         // Private Properties
 
-        // FSM
+        // FSM Current State
         States m_currentState;
         States m_lastState;
 
@@ -103,30 +78,26 @@ namespace fsm
         Vector2<real> m_vMV;
 
         // PID experimental
-        // CCW: left
+        // CCW: left versus CW: right (critical)
         bool m_directionCCW;
         // Using sign to determine turn direction.
         real m_perpDot;
-        // Dot Product under study
+        // Dot Product (not critical)
         real m_dot;
-        // Dot Angle for uf
+        // Dot Angle for uf (critical)
         real m_dotAngle;
-        // Anglular velocity
-        real m_lastDotAngle;
-        real m_angularVelocity;
-        // control function
+        // control function (uf) uses error function (ef)
         real m_uf;
 
-        // Statistics
-        // real m_tuples[TUPLES_SIZE];
-        // int m_index;
-        // real m_mean;
-        // real m_sd;
-
-        // Motors
-        real m_xMotors; // used for turn only
-        real m_yMotors; // used for forward only
-        // Both may be used...
+        // Motors Speeds (16-bit word integers only)
+        // Use 10-bit digits (0 - 1023)
+        //   0 ---- 511 ---- 1023 (I2C data as 16-bit word)
+        //  -1 ----   0 ---- 1    (Joystick Algorithm floats)
+        // Once data is received by the Slave-MCU use
+        // mapping to convert 10-bit digits to floats...
+        int m_xSpeedInteger; // used for turn only
+        int m_ySpeedInteger; // used for forward only
+        // Both may be used together...
 
         // Private Setters
         void m_setAngleSP(real angle);
@@ -134,54 +105,38 @@ namespace fsm
 
         // Private Methods
         void m_randomAngle();
-        void m_angleToVectorSP();
-        void m_angleToVectorMV();
+        void m_angleToVectorSP(); // (critical)
+        void m_angleToVectorMV(); // (critical)
         real m_sign(real value);
 
         // Private States
         bool m_startState();
         bool m_enterSetpointState();
         bool m_setpointState();
-        bool m_enterTurnDirectionState();
         bool m_turnDirectionState();
-        bool m_enterOrientationState();
         bool m_orientationState();
-        // New State Methods
-        bool m_enterMotorsTurnState();
-        bool m_motorsTurnState();
-        bool m_enterMotorsForwardState();
-        bool m_motorsForwardState();
 
         // Private Supporting Update Methods
         Vector2<real> m_directionVector(real radian);
-        void m_updateCompass();
-        void m_updatePID();
         bool m_turnChanged();
-        bool m_controlPass();
         bool m_stateChanged();
-        // real m_statistics(real value);
-        void m_updateFSM();
+        void m_turnDirection();
+        void m_updatePID(); // ------------------------ Update
+        void m_updateFSM(); // ------------------------ Update
 
         // Debug
-        void m_debugPlotCSV();
         String m_printState();
+        void m_debugPlotCSV();
 
     public:
         // Constructor - inline
         ControlManagerV2()
         {
+            // Critical Variables
             m_angleSP = (real)0;
             m_angleMV = (real)0;
-            // Experimental (See updatePID())
+            m_dot =  (real)0;
             m_dotAngle = (real)0;
-            m_lastDotAngle = (real)0;
-            m_angularVelocity = (real)0;
-
-            // I2C Bus
-            m_busI2C = BusI2C();
-
-            // Compass
-            m_compass = LSM303();
 
             // Current State ID
             m_currentState = States::StartState;
@@ -192,36 +147,34 @@ namespace fsm
             real Ki = (real)0.0;
             real Kd = (real)0.0;
             // BEWARE: Sampled-Interval Ts
-            // has to have the same time
+            // should have the same time
             // interval as loop() timer...
-            real Ts = (real)0.1; // See m_updatePID()
+            // MASTER --------------------------------------- WATCHME
+            real Ts = (real)0.25; // See main.cpp loop()...
+            
+            // DEBUG ---------------------------------------- WATCHME
+            //real Ts = (real)1; // See main.cpp loop()...
+
             m_pid = Controller<real>(Kp, Ki, Kd, Ts);
-            // Assumming error approaches zero...
+            // Assumming control function (uf)
+            // approaches zero...
             m_pid.SetPoint((real)0);
             m_uf = (real)0;
-
-            // Motors
-
-            // Statistics (optional)
-            // Tuples used to get Mean & SD...
-            // Used inside m_updateCompass()
-            // for (int i = 0; i < TUPLES_SIZE; i++)
-            //     m_tuples[i] = (real)0;
-            // m_stats = nmr::Statistics<real>(m_tuples, TUPLES_SIZE);
-            // // Index counter for Queue()
-            // m_index = 0;
         }
 
         ~ControlManagerV2() = default;
 
-        // ControlManagerV2 setup()
-        void Begin();
         /////////////////////////////////////////////////////////////
         // ControlManagerV2 loop() inline
-        void Update()
+        void Update(real heading, bool debug)
         {
-            // Heading
-            m_updateCompass();
+            m_angleMV = heading;
+
+            // Set Measured Value
+            m_setAngleMV(m_angleMV);
+
+            // Require both Vector SP and Vector MV
+            m_angleToVectorMV();
 
             // PID
             m_updatePID();
@@ -232,32 +185,17 @@ namespace fsm
             m_lastState = m_currentState;
 
             // CSV - Debug Comment this or the other....
-            m_debugPlotCSV();
+            if (debug)
+                m_debugPlotCSV();
         }
         /////////////////////////////////////////////////////////////
+
         // Getters
         real GetAngleSP();
         real GetAngleMV();
-        real MotorsX();
-        real MotorsY();
+        int SpeedIntegerX();
+        int SpeedIntegerY();
     };
-
-    template <typename real>
-    void ControlManagerV2<real>::Begin()
-    {
-        // Wire startup
-        m_busI2C.Begin(MASTER_ADDR_0x14, 3000, true);
-
-        // Compass
-        m_compass.init();
-        m_compass.enableDefault();
-        // Calibration values; the default values of +/-32767 for each axis...
-        // Use Calibration Code
-        // WAS: m_compass.m_min = (LSM303::vector<int16_t>){-32767, -32767, -32767};
-        // WAS: m_compass.m_max = (LSM303::vector<int16_t>){+32767, +32767, +32767};
-        m_compass.m_min = (LSM303::vector<int16_t>){-2747, -2711, -1975};
-        m_compass.m_max = (LSM303::vector<int16_t>){+2978, +2856, +2723};
-    }
 
     // PUBLIC GETTERS
 
@@ -274,15 +212,15 @@ namespace fsm
     }
 
     template <typename real>
-    real ControlManagerV2<real>::MotorsX()
+    int ControlManagerV2<real>::SpeedIntegerX()
     {
-        return m_xMotors;
+        return m_xSpeedInteger;
     }
 
     template <typename real>
-    real ControlManagerV2<real>::MotorsY()
+    int ControlManagerV2<real>::SpeedIntegerY()
     {
-        return m_yMotors;
+        return m_ySpeedInteger;
     }
 
     // PRIVATE SETTERS
@@ -356,38 +294,6 @@ namespace fsm
     }
 
     template <typename real>
-    void ControlManagerV2<real>::m_updateCompass()
-    {
-        // Compass Update LSM303
-        m_compass.read();
-
-        // Compass Heading
-        real angle = m_compass.heading();
-
-        // Declination
-        real declinationAngle = (8.0 + (3.0 / 60.0));
-        angle += declinationAngle;
-
-        // Keep angle between 0 - 360
-        if (angle < (real)0)
-            angle = angle + (real)360;
-        if (angle > (real)360)
-            angle = angle - (real)360;
-
-        // OPTIONAL (can be commented out)
-        // angle = m_statistics(angle);
-
-        // Set Measured Value
-        m_setAngleMV(angle);
-
-        // Require both Vector SP and Vector MV
-        m_angleToVectorMV();
-
-        // Prevent hiccups (stalls)
-        m_busI2C.ClearTimeout();
-    }
-
-    template <typename real>
     void ControlManagerV2<real>::m_updatePID()
     {
         real processPoint;
@@ -411,24 +317,20 @@ namespace fsm
     {
         bool turnChanged = false;
         if (m_directionCCW)
-        {
             turnChanged = m_perpDot >= (real)0;
-        }
         else
-        {
             turnChanged = m_perpDot < (real)0;
-        }
 
         return turnChanged;
     }
 
     template <typename real>
-    bool ControlManagerV2<real>::m_controlPass()
+    void ControlManagerV2<real>::m_turnDirection()
     {
-        // Used along with m_turnChanged()
-        if (m_uf < (real)10)
-            return true;
-        return false;
+        if (m_perpDot < 0)
+            m_directionCCW = true; // Left-turn
+        else
+            m_directionCCW = false; // Right-turn
     }
 
     template <typename real>
@@ -438,20 +340,6 @@ namespace fsm
             return true;
         return false;
     }
-
-    // template <typename real>
-    // real ControlManagerV2<real>::m_statistics(real value)
-    // {
-    //     // Statistics (5-point data queue)
-    //     // See ControlManagerV2 CLASS
-    //     if (m_index >= TUPLES_SIZE)
-    //         m_index = 0;
-    //     m_stats.Queue(value, m_index);
-    //     m_mean = m_stats.Average();
-    //     m_sd = m_stats.StandardDeviation();
-    //     m_index++;
-    //     return m_mean;
-    // }
 
     // STATES
 
@@ -477,77 +365,80 @@ namespace fsm
     template <typename real>
     bool ControlManagerV2<real>::m_setpointState()
     {
-        // OK to use here
-        // Choose a random angle (-180 to 180) as the set-point (SP)
-        // and greater than the previous angle by 30 degrees.
+        // Random Angle used as PID Setpoint
         m_randomAngle();
 
-        // Prepare FSM to Transition To Turn Direction State
-        m_currentState = States::EnterTurnDirectionState;
+        // Transition
+        m_currentState = States::TurnDirectionState;
 
-        // Ready Auto-Transitional Flag
-        return true;
-    }
-
-    template <typename real>
-    bool ControlManagerV2<real>::m_enterTurnDirectionState()
-    {
-        // Ready Auto-Transitional Flag
+        // Auto Flag
         return true;
     }
 
     template <typename real>
     bool ControlManagerV2<real>::m_turnDirectionState()
     {
-        // OK to use variable here...
-        if (m_perpDot < 0)
-            m_directionCCW = true; // Left-turn
-        else
-            m_directionCCW = false; // Right-turn
+        // Set the turn direction
+        m_turnDirection();
 
-        m_currentState = States::EnterOrientationState;
-        return true;
-    }
+        // Transition
+        m_currentState = States::OrientationState;
 
-    template <typename real>
-    bool ControlManagerV2<real>::m_enterOrientationState()
-    {
+        // Auto Flag
         return true;
     }
 
     template <typename real>
     bool ControlManagerV2<real>::m_orientationState()
     {
+        // There's a lot going on here --------------- FIXME
+        // Arbitrary Values
         bool transitionflag = false;
         bool turnflag = m_turnChanged();
         // turn direction will constantly switch
-        // back and forth until m_uf is low enough...
+        // back and forth until a m_uf is caught...
         // Units Degrees
         bool spFlag = abs(m_uf) < (real)2.5;
         bool xMotorsFlag = abs(m_uf) > (real)15; // 4x spFlag
 
-        // Priority 0 - Not yet implemented
+        // All sets MUST use if-else ------------------ FIXME
+        // Prevents a bug from catching a last (if) statement...
+        //
+        // Priority 0 - Arbitrary Speeds for now
         if (xMotorsFlag)
         {
-            // Turn only
+            // Right Turn only 
+            //  0 ---- 511 --*- 1023 (818)
+            // -1 ----   0 --*- 1    (0.8) 80% power
+            // Left Turn only 
+            //  0 -*-- 511 ---- 1023 (204)
+            // -1 -*--   0 ---- 1    (-0.8) 80% power
             if (m_directionCCW)
-                m_xMotors = (real)0.75; // CCW
+                m_xSpeedInteger = 767; // CCW
             else
-                m_xMotors = (real)-0.75; // CW
+                m_xSpeedInteger = 255; // CW
 
             // Stop yMotors
-            m_yMotors = (real)0;
+            m_ySpeedInteger = 511;
         }
         else
         {
             // Turn slowly
+            // Right Turn only 
+            //  0 ---- 511 -*-- 1023 (639)
+            // -1 ----   0 -*-- 1    (0.625)  62.5% power
+            // Left Turn only 
+            //  0 --*- 511 ---- 1023 (383)
+            // -1 --*-   0 ---- 1    (-0.625)  62.5% power
             if (m_directionCCW)
-                m_xMotors = (real)0.25; // CCW
+                m_xSpeedInteger = 639; // CCW
             else
-                m_xMotors = (real)-0.25; // CW
+                m_xSpeedInteger = 383; // CW
 
             // Move forward
-            m_yMotors = (real)7.5;
+            //  0 ---- 511 --*- 1023 (818)
+            // -1 ----   0 --*- 1    (0.8) 80% power
+            m_ySpeedInteger = 818;
         }
 
         if (spFlag && turnflag)
@@ -559,44 +450,12 @@ namespace fsm
         else if (turnflag)
         {
             // Priority 2 - Good
-            m_currentState = States::EnterTurnDirectionState;
+            m_currentState = States::TurnDirectionState;
             transitionflag = true;
         }
 
         // Flagged Transition
         return transitionflag;
-    }
-
-    template <typename real>
-    bool ControlManagerV2<real>::m_enterMotorsTurnState()
-    {
-        // An Auto-Transitional Flag
-        return true;
-    }
-
-    template <typename real>
-    bool ControlManagerV2<real>::m_motorsTurnState()
-    {
-        // Nothing to do here...
-
-        // An Auto-Transitional Flag
-        return true;
-    }
-
-    template <typename real>
-    bool ControlManagerV2<real>::m_enterMotorsForwardState()
-    {
-        // An Auto-Transitional Flag
-        return true;
-    }
-
-    template <typename real>
-    bool ControlManagerV2<real>::m_motorsForwardState()
-    {
-        // Nothing to do here...
-
-        // An Auto-Transitional Flag
-        return true;
     }
 
     template <typename real>
@@ -630,28 +489,10 @@ namespace fsm
             }
             break;
 
-        case States::EnterTurnDirectionState:
-            // Must have a State Method
-            if (m_enterTurnDirectionState())
-            {
-                // Transition To...
-                m_currentState = States::TurnDirectionState;
-            }
-            break;
-
         case States::TurnDirectionState:
             // Must have a State Method
             if (m_turnDirectionState())
             { /* Allow State to Decide */
-            }
-            break;
-
-        case States::EnterOrientationState:
-            // Must have a State Method
-            if (m_enterOrientationState())
-            {
-                // Transition To...
-                m_currentState = States::OrientationState;
             }
             break;
 
@@ -662,25 +503,51 @@ namespace fsm
             }
             break;
 
-        case States::EnterMotorsTurnState:
-            // Must have a State Method
-            if (m_enterOrientationState())
-            {
-                // Transition To...
-                m_currentState = States::MotorsTurnState;
-            }
-            break;
-
-        case States::MotorsTurnState:
-            // Must have a State Method
-            if (m_orientationState())
-            { /* Allow State to Decide */
-            }
-            break;
-
         default:
             break;
         }
+    }
+
+    template <typename real>
+    String ControlManagerV2<real>::m_printState()
+    {
+        String str = "";
+
+        // Shoud match updateFSM()
+        switch (m_currentState)
+        {
+
+        case States::StartState:
+            // str = "Start State";
+            str = "ST"; // Use this for CSV
+            break;
+
+        case States::EnterSetpointState:
+            // str = "Enter Setpoint State";
+            str = "ES"; // Use this for CSV
+            break;
+
+        case States::SetpointState:
+            // str = "Setpoint State";
+            str = "SS"; // Use this for CSV
+            break;
+
+        case States::TurnDirectionState:
+            // str = "Turn Direction State";
+            str = "TS"; // Use this for CSV
+            break;
+
+        case States::OrientationState:
+            // str = "Orientation State";
+            str = "OS"; // Use this for CSV
+            break;
+
+        default:
+            // Used for nullState
+            str = "Print State at Default"; // DO NOT USE
+            break;
+        }
+        return str;
     }
 
     template <typename real>
@@ -708,78 +575,6 @@ namespace fsm
             Serial.print("Wait");
 
         Serial.println(",");
-    }
-
-    template <typename real>
-    String ControlManagerV2<real>::m_printState()
-    {
-        String str = "";
-
-        // Shoud match updateFSM()
-        switch (m_currentState)
-        {
-
-        case States::StartState:
-            // str = "Start State";
-            str = "ST"; // Use this for CSV
-            break;
-
-        case States::EnterSetpointState:
-            // str = "Enter Setpoint State";
-            str = "ES"; // Use this for CSV
-            break;
-
-        case States::SetpointState:
-            // str = "Setpoint State";
-            str = "SS"; // Use this for CSV
-            break;
-
-        case States::EnterTurnDirectionState:
-            // str = "Enter Turn Direction State";
-            str = "ET"; // Use this for CSV
-            break;
-
-        case States::TurnDirectionState:
-            // str = "Turn Direction State";
-            str = "TS"; // Use this for CSV
-            break;
-
-        case States::EnterOrientationState:
-            // str = "Enter Orientation State";
-            str = "EO"; // Use this for CSV
-            break;
-
-        case States::OrientationState:
-            // str = "Orientation State";
-            str = "OS"; // Use this for CSV
-            break;
-
-        case States::EnterMotorsTurnState:
-            // str = "Enter Motors Turn State";
-            str = "EM"; // Use this for CSV
-            break;
-
-        case States::MotorsTurnState:
-            // str = "Motors Turn State";
-            str = "MT"; // Use this for CSV
-            break;
-
-        case States::EnterMotorsForwardState:
-            // str = "Enter Motors Forward State";
-            str = "MF"; // Use this for CSV
-            break;
-
-        case States::MotorsForwardState:
-            // str = "Motors Forward State";
-            str = "FS"; // Use this for CSV
-            break;
-
-        default:
-            // Used for nullState
-            str = "Print State at Default"; // Use this for CSV
-            break;
-        }
-        return str;
     }
 }
 

@@ -22,7 +22,7 @@
 
 ## In Development
 
-- 20230523 major-update... Bug fixes, overall update on ControlManagerV2.h...
+- 20230525 major-update... Bug fixes, overall update on ControlManagerV2.h, src folder: STATES, MASTER and SLAVE... Work in progress...
 
 ## NOTICE
 

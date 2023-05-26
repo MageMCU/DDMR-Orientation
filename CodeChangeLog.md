@@ -4,4 +4,5 @@
 <p>20230516 - First major commit for DDMR-Orientation...</p>
 <p>20230520 - update DDMR-Orientation...</p>
 <p>20230520 - another update DDMR-Orientation...</p>
-<p>20230523 - buf fixes, major update ControlManagerV2.h...</p>
+<p>20230523 - bug fixes, major update ControlManagerV2.h...</p>
+<p>20230525 - bug fixes, major update ControlManagerV2.h and src folder Vector2, Master and Slave... </p>
