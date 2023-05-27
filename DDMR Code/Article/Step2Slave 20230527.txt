@@ -1,0 +1,7 @@
+	data			Step2Slave main.cpp simulation 
+-------------------     -----------------------------------------------------
+s: 1 cX: 767 cY: 511  	<< data transmitted I2C from Master to Slave
+ iX: 0.50 iY: -0.00 	<< data converted to Map-Input for Joystick algorithm
+ oL: 0.50 oR: -0.50 	<< data output processed by Joystick algorithm
+ mbL: 127 mbR: -127 	<< data converted to Map-Output for L298N
+ maL: 127 maR: 127 	<< data output from L298N to Motors

@@ -22,7 +22,11 @@
 
 ## In Development
 
-- 20230525 major-update... Bug fixes, overall update on ControlManagerV2.h, src folder: STATES, MASTER and SLAVE... Work in progress...
+- 20230527 Include Folder... incorporated Joystick Algorithm... Work in progress... Please note that the control manager for the direction vectors is simply using constants for the output... There is a lot more to do...
+- Source Folder (both Master and Slave are used at the same time...). The reason for multiple MCU is share work loads...
+    - Step1 States (completed)
+    - Step2 Master (completed)
+    - Step2 Slave (study along with the control manager...)
 
 ## NOTICE
 

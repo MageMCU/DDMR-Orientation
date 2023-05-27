@@ -1,6 +1,6 @@
 ## DDMR code
 
-- namespace - there is no specificity but does incorporate others...
+- namespace **csm** - control state machine...
 
 ## ***include folder***
 
@@ -14,6 +14,8 @@
     - new pending...
 - **ControlManagerV2.h**
     - completed
+- **Joystick.h** 
+- **LinearMap.h** 
 - **LSM303.h** 
 - **Switch.h** 
     - Instead of using a tactile button, a single wire is used as a switch...
@@ -36,10 +38,10 @@
                 - (3) **Angle Dot Product** on the unit vectors (vector Setpoint and vector Measured Value) used as the PID control function (uf).
 - Step2MasterI2C folder
     - main.cpp
-        - development similar to MCU Communication
+        - development similar to MCU Communication - Completed...
 - Step2SlaveI2C folder
     - main.cpp
-        - development similar to MCU Communication
+        - development similar to MCU Communication yet this has become a study along with the control manager for the direction vectors...
 - XCPP folder
     - **BusI2C.cpp** 
     - **LSM303.cpp**

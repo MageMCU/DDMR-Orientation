@@ -54,4 +54,13 @@ int xSpeedInteger; // used for turn only
 int ySpeedInteger; // used for forward only
 // Both may be used together...
 
+float xInput;
+float yInput;
+
+float leftOuput;
+float rightOutput;
+
+int leftMotor;
+int rightMotor;
+
 #endif

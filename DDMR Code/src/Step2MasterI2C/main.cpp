@@ -86,7 +86,7 @@ void i2cTransmitToSlave()
     // TRANSMIT
     gBusI2C.TransmitMessage(SLAVE_ADDR_0x16, message, I2C_MESSAGE_SIZE);
     // Print all errors...
-    Serial.println(gBusI2C.ErrorMsg());
+    // Serial.println(gBusI2C.ErrorMsg());
 }
 
 void TransmitControlData()
@@ -101,13 +101,13 @@ void TransmitControlData()
     }
 
     // Debug
-    Serial.print("s: ");
-    Serial.print(stateID);
-    Serial.print(" x: ");
-    Serial.print(xSpeedInteger);
-    Serial.print(" y: ");
-    Serial.print(ySpeedInteger);
-    Serial.print(" ");
+    // Serial.print("s: ");
+    // Serial.print(stateID);
+    // Serial.print(" x: ");
+    // Serial.print(xSpeedInteger);
+    // Serial.print(" y: ");
+    // Serial.print(ySpeedInteger);
+    // Serial.print(" ");
 
 
     // Send data to Slave

@@ -24,6 +24,8 @@
 
 #include "Common.h"
 #include "BusI2C.h"
+#include "Joystick.h"
+#include "LinearMap.h"
 #include "Timer.h"
 
 // Arduino Uno as Master communicates with another Arduino as Slave.
@@ -41,6 +43,9 @@
 
 // Global Declartions
 dsg::BusI2C gBusI2C;
+csm::Joystick<float> gJoystick;
+nmr::LinearMap<float> gMapInput;
+nmr::LinearMap<float> gMapOutput;
 nmr::Timer gLoopTimer;
 
 // Callback
@@ -53,8 +58,7 @@ void SlaveReceiveI2C(int numberBytes)
     if (message[0] == SLAVE_ADDR_0x16)
     {
         stateID = message[1];
-        // Not receiving xCOntrol
-        xSpeedInteger = gBusI2C.BytesToWord(message[2], message[3]); // FIXME
+        xSpeedInteger = gBusI2C.BytesToWord(message[2], message[3]);
         ySpeedInteger = gBusI2C.BytesToWord(message[4], message[5]);
     }
 }
@@ -70,6 +74,14 @@ void setup()
     gBusI2C = dsg::BusI2C();
     // Wire.BEGIN: Include Timeout
     gBusI2C.Begin(SLAVE_ADDR_0x16, 3000, true);
+
+    // Assign Joystick Algorithm Object
+    gJoystick = csm::Joystick<float>();
+
+    // Conversion: integers to floats (setup)
+    gMapInput = nmr::LinearMap<float>((float)0, (float)1023, (float)-1, (float)1);
+    // Conversion: floats to integers (setup)
+    gMapOutput = nmr::LinearMap<float>((float)-1, (float)1, (float)-255, (float)255);
 }
 
 void loop()
@@ -79,15 +91,54 @@ void loop()
         // I2C RECEIVE
         Wire.onReceive(SlaveReceiveI2C);
 
-        // Algorithn Pending ------------------------------- FIXME
-        
-        // Debug
+        // Control integers
         Serial.print("s: ");
         Serial.print(stateID);
-        Serial.print(" x: ");
+        Serial.print(" cX: ");
         Serial.print(xSpeedInteger);
-        Serial.print(" y: ");
+        Serial.print(" cY: ");
         Serial.println(ySpeedInteger);
+
+        // Convert Control values to Joystick Input
+        xInput = gMapInput.Map((float)xSpeedInteger);
+        yInput = gMapInput.Map((float)ySpeedInteger);
+
+        // Input floats
+        Serial.print(" iX: ");
+        Serial.print(xInput);
+        Serial.print(" iY: ");
+        Serial.println(yInput);
+
+        // Joystick - Input
+        gJoystick.UpdateInputs(xInput, yInput);
+        // Joystick - Output
+        leftOuput = gJoystick.OutLeft();
+        rightOutput = gJoystick.OutRight();
+
+        // Output floats
+        Serial.print(" oL: ");
+        Serial.print(leftOuput);
+        Serial.print(" oR: ");
+        Serial.println(rightOutput);
+
+        // Simulate L298N algorithm
+        // integer has to be signed...
+        leftMotor = (int)gMapOutput.Map(leftOuput);
+        rightMotor = (int)gMapOutput.Map(rightOutput);
+
+        // Motors before integers (L298N internal processing)
+        Serial.print(" mbL: ");
+        Serial.print(leftMotor);
+        Serial.print(" mbR: ");
+        Serial.println(rightMotor);
+
+        // Motors after integers (L298N input)
+        Serial.print(" maL: ");
+        Serial.print(abs(leftMotor));
+        Serial.print(" maR: ");
+        Serial.println(abs(rightMotor));
+
+        // L298N algorithm (L298N.h class) not yet incorporated...
     }
 
     // Prevent hiccups (stalls)
