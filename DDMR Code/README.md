@@ -20,9 +20,9 @@
 - **Switch.h** 
     - Instead of using a tactile button, a single wire is used as a switch...
 - **Timer.h**  
-    - file located in Numerocs repository (ok not to move for now)
+    - file located in Numerics repository (ok not to move for now)
 - **Vector2.h** 
-    - file located in Numerocs repository (ok not to move for now)
+    - file located in Numerics repository (ok not to move for now)
 
 ## ***src folder***
 
