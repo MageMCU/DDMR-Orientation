@@ -1,6 +1,6 @@
 //
 // Carpenter Software
-// Folders: src: Step1STATES: DotProduct:
+// Folders: src: Step2MasterI2C:
 // File: main.cpp
 //
 // Purpose: Public Github Account - MageMCU
@@ -74,15 +74,17 @@ void i2cTransmitToSlave()
     uint8_t message[I2C_MESSAGE_SIZE];
     // Arrange Bytes
     message[0] = (uint8_t)SLAVE_ADDR_0x16;
-    message[1] = (uint8_t)stateID;
+    // States
+    message[1] = loState;
+    message[2] = hiState;
     // Input-X
     gBusI2C.WordToBytes(xSpeedInteger);
-    message[2] = gBusI2C.GetHiByte();
-    message[3] = gBusI2C.GetLoByte();
+    message[3] = gBusI2C.GetHiByte();
+    message[4] = gBusI2C.GetLoByte();
     // Input-Y
     gBusI2C.WordToBytes(ySpeedInteger);
-    message[4] = gBusI2C.GetHiByte();
-    message[5] = gBusI2C.GetLoByte();
+    message[5] = gBusI2C.GetHiByte();
+    message[6] = gBusI2C.GetLoByte();
     // TRANSMIT
     gBusI2C.TransmitMessage(SLAVE_ADDR_0x16, message, I2C_MESSAGE_SIZE);
     // Print all errors...
@@ -93,8 +95,9 @@ void TransmitControlData()
 {
     xSpeedInteger = 511;
     ySpeedInteger = 511;
-    
-    if (stateID == (uint8_t)ON)
+
+    // if switch is ON
+    if (loState > (uint8_t) 0)
     {
         xSpeedInteger = gCMV2.SpeedIntegerX();
         ySpeedInteger = gCMV2.SpeedIntegerY();
@@ -102,13 +105,12 @@ void TransmitControlData()
 
     // Debug
     // Serial.print("s: ");
-    // Serial.print(stateID);
+    // Serial.print(gState);
     // Serial.print(" x: ");
     // Serial.print(xSpeedInteger);
     // Serial.print(" y: ");
     // Serial.print(ySpeedInteger);
     // Serial.print(" ");
-
 
     // Send data to Slave
     i2cTransmitToSlave();
@@ -123,24 +125,40 @@ void loop()
     // Note: 1000ms = 1s
     if (gTimerFSM.isTimer(250))
     {
+        // Control Update compass heading
+        gCMV2.Update(gCompass.Update(), false);
+        // Current State
+        hiState = gCMV2.CurrentState();
+
         // CAUTION:
         // SEE Switch.h FOR INSTRUCTIONS
         // Button.h - Not Used...
         if (gSwitch.isSwitchOn())
         {
-            stateID = (uint8_t)ON;
-
-            // Control Update compass heading
-            gCMV2.Update(gCompass.Update(), false);
+            // Bit Number Zero
+            // SLAVE Motors - ON
+            loState = (uint8_t) ON;
         }
         else
         {
-            // Pull-Wire To Stop Motors
-            stateID = (uint8_t)OFF;
+            // Bit Number Zero
+            // Pull-Wire To Stop SLAVE Motors - OFF;
+            loState = (uint8_t) OFF;
         }
+
+        // Bit Number One (additive)
+        // Left (CCW) Turn Direction
+        if (gCMV2.IsDirectionCCW())
+            loState += (uint8_t) 2;
 
         // I2C TRANSMIT
         TransmitControlData();
+
+        // Debug
+        // Serial.print("lo: ");
+        // Serial.print(loState);
+        // Serial.print(" hi: ");
+        // Serial.println(hiState);
 
         // DeltaTime (how much time does gCMV2.Update(); uses?)
         // Serial.print("dT: ");

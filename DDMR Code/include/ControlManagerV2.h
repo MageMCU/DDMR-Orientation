@@ -4,7 +4,7 @@
 // Usage: (1) Vector2 (direction vectors)
 //        (2) Perpendicular-Dot Product
 //            for turning-direction
-//        (3) Angle Dot Product used for PID 
+//        (3) Angle Dot Product used for PID
 //            control function (uf) - here
 //            degrees are used but may be
 //            changed to radian-measure...
@@ -41,16 +41,11 @@ namespace csm // control state machine
     // Priority (inside states use if-else)
     enum States
     {
-        // States < 10
-        StartState = 1,         // Rename StartState
+        StartState = 0,         // StartState
+        EnterSetpointState = 1, // OK
         SetpointState = 2,      // OK
         TurnDirectionState = 3, // OK
         OrientationState = 4,   // OK
-
-        // Enter States >= 10
-        EnterSetpointState = 12, // OK
-
-        // Exit States >= 20 NONE
 
         // NULL STATE
         nullState = -1
@@ -135,7 +130,7 @@ namespace csm // control state machine
             // Critical Variables
             m_angleSP = (real)0;
             m_angleMV = (real)0;
-            m_dot =  (real)0;
+            m_dot = (real)0;
             m_dotAngle = (real)0;
 
             // Current State ID
@@ -151,9 +146,9 @@ namespace csm // control state machine
             // interval as loop() timer...
             // MASTER --------------------------------------- WATCHME
             real Ts = (real)0.25; // See main.cpp loop()...
-            
+
             // DEBUG ---------------------------------------- WATCHME
-            //real Ts = (real)1; // See main.cpp loop()...
+            // real Ts = (real)1; // See main.cpp loop()...
 
             m_pid = Controller<real>(Kp, Ki, Kd, Ts);
             // Assumming control function (uf)
@@ -193,6 +188,8 @@ namespace csm // control state machine
         // Getters
         real GetAngleSP();
         real GetAngleMV();
+        bool IsDirectionCCW();
+        uint8_t CurrentState();
         int SpeedIntegerX();
         int SpeedIntegerY();
     };
@@ -209,6 +206,18 @@ namespace csm // control state machine
     real ControlManagerV2<real>::GetAngleMV()
     {
         return m_angleMV;
+    }
+
+    template <typename real>
+    bool ControlManagerV2<real>::IsDirectionCCW()
+    {
+        return m_directionCCW;
+    }
+
+    template <typename real>
+    uint8_t ControlManagerV2<real>::CurrentState()
+    {
+        return (uint8_t)m_currentState;
     }
 
     template <typename real>
@@ -328,9 +337,13 @@ namespace csm // control state machine
     void ControlManagerV2<real>::m_turnDirection()
     {
         if (m_perpDot < 0)
+        {
             m_directionCCW = true; // Left-turn
+        }
         else
+        {
             m_directionCCW = false; // Right-turn
+        }
     }
 
     template <typename real>
@@ -407,10 +420,10 @@ namespace csm // control state machine
         // Priority 0 - Arbitrary Speeds for now
         if (xMotorsFlag)
         {
-            // Right Turn only 
+            // Right Turn only
             //  0 ---- 511 --*- 1023 (818)
             // -1 ----   0 --*- 1    (0.8) 80% power
-            // Left Turn only 
+            // Left Turn only
             //  0 -*-- 511 ---- 1023 (204)
             // -1 -*--   0 ---- 1    (-0.8) 80% power
             if (m_directionCCW)
@@ -424,10 +437,10 @@ namespace csm // control state machine
         else
         {
             // Turn slowly
-            // Right Turn only 
+            // Right Turn only
             //  0 ---- 511 -*-- 1023 (639)
             // -1 ----   0 -*-- 1    (0.625)  62.5% power
-            // Left Turn only 
+            // Left Turn only
             //  0 --*- 511 ---- 1023 (383)
             // -1 --*-   0 ---- 1    (-0.625)  62.5% power
             if (m_directionCCW)

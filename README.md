@@ -22,11 +22,11 @@
 
 ## In Development
 
-- 20230527 Include Folder... incorporated Joystick Algorithm... Work in progress... Please note that the control manager for the direction vectors is simply using constants for the output... There is a lot more to do...
-- Source Folder (both Master and Slave are used at the same time...). The reason for multiple MCU is share work loads...
-    - Step1 States (completed)
-    - Step2 Master (completed)
-    - Step2 Slave (study along with the control manager...)
+- 20230530 Include Folder... incorporated L298N Class... Work in progress... Please note that the control manager for the direction vectors is simply using constants for the output... This repository is under long term study...
+- Source Folder (both Master and Slave are used at the same time...). The reason for multiple MCU is to share work loads...
+    - Step1 States (completed) independent
+    - Step2 Master (completed) dependent slave
+    - Step2 Slave (completed) dependent master
 
 ## NOTICE
 

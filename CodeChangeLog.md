@@ -6,3 +6,4 @@
 <p>20230520 - another update DDMR-Orientation...</p>
 <p>20230523 - bug fixes, major update ControlManagerV2.h...</p>
 <p>20230525 - bug fixes, major update ControlManagerV2.h and src folder Vector2, Master and Slave... </p>
+<p>20230530 - update DDMR-Orientation... src folder: STATES, MASTER and SLAVE are completed...</p>

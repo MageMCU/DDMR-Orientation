@@ -5,6 +5,7 @@
 ## ***include folder***
 
 **Following classes are stand-alone**
+- **Bitwise.h** 
 - **BusI2C.h** 
 - **Common.h** 
 - **Compass.h** 
@@ -14,11 +15,17 @@
     - new pending...
 - **ControlManagerV2.h**
     - completed
-- **Joystick.h** 
+- **Joystick.h**
+    - **Archived version** using namespace csm (control state machine). Do not use the other Joystick.h class using namespace uno...
+    - This copy remains with DDMR-Orientation repository...
+- **L298N.h** 
+    - **Archived version** using namespace csm (control state machine). Do not use the other L298N.h class using namespace uno...
+    - This copy remains with DDMR-Orientation repository...
 - **LinearMap.h** 
 - **LSM303.h** 
 - **Switch.h** 
     - Instead of using a tactile button, a single wire is used as a switch...
+    - TODO - interchange Button.h class to debug... 
 - **Timer.h**  
     - file located in Numerics repository (ok not to move for now)
 - **Vector2.h** 
@@ -41,7 +48,7 @@
         - development similar to MCU Communication - Completed...
 - Step2SlaveI2C folder
     - main.cpp
-        - development similar to MCU Communication yet this has become a study along with the control manager for the direction vectors...
+        - development similar to MCU Communication yet this has become a study along with the control manager for the direction vectors... Completed...
 - XCPP folder
     - **BusI2C.cpp** 
     - **LSM303.cpp**
