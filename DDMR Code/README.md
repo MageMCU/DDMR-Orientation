@@ -60,4 +60,6 @@
 
 ## Notes
 
+- I give myself a big pat on the back for completing the first part of the project  - Orientation project is completed using 2D Vectors except for the quaternions which will undergo a lengthy study...
+
 
