@@ -34,5 +34,5 @@
 
 ## Disclaimer and Terms
 
-- Please follow the ***Disclaimer*** and ***Terms*** in the ***Communication*** Repository.
+- Please follow the ***Disclaimer*** and ***Terms*** in the ***DDMR-Orientation*** Repository.
    
